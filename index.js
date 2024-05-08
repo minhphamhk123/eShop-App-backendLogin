@@ -8,6 +8,7 @@ import path from 'path';
 import cors from 'cors';
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from './utils/swagger.js'
+import test from './controllers/auth.controller.js';
 
 const __dirname = path.resolve();
 
@@ -27,10 +28,11 @@ app.use(cookieParser());
 // App listener
 const server = app.listen(process.env.PORT || 8080, async () => {
   console.log(`Server running on port ${process.env.PORT || 8080}`);
-  try {
+  try { 
     console.log('⏳ Database connecting...');
     await connectDB;
     console.log('✅ Database connected.');
+    test;
   } catch (error) {
     console.log('❌ Error:', error);
   }

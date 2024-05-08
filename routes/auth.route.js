@@ -1,5 +1,5 @@
 import express from 'express';
-import { signin, signup, google, signout } from '../controllers/auth.controller.js';
+import { signin, signup, google, signout, verify } from '../controllers/auth.controller.js';
 
 const router = express.Router();
 
@@ -21,5 +21,7 @@ router.post('/signup', signup);
 router.post('/signin', signin);
 router.post('/google', google);
 router.get('/signout', signout);
+
+router.get('/verify/:userId/:uniqueString', verify);
 
 export default router;
