@@ -6,6 +6,7 @@ import { errorHandler } from '../utils/error.js';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
+import eventEmitter from '../utils/eventEmitter.js';
 
 let transporter = nodemailer.createTransport({
   host: 'smtp.ethereal.email',
@@ -26,11 +27,12 @@ const test = transporter.verify((error, success) => {
   }
 })
 
+// output api function
 export const signup = async (req, res, next) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, firstName, lastName, phoneNumber } = req.body;
   console.log(req.body);
   const hashedPassword = bcryptjs.hashSync(password, 10);
-  const newUser = new User({ username, email, password: hashedPassword });
+  const newUser = new User({ username, email, password: hashedPassword, firstName, lastName, phoneNumber });
 
   try {
     await newUser.save().then((result) => {
@@ -54,13 +56,13 @@ export const signin = async (req, res, next) => {
       })
     } else {
       const validPassword = bcryptjs.compareSync(password, validUser.password);
-    if (!validPassword) return next(errorHandler(401, 'wrong credentials'));
-    const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    const { password: hashedPassword, ...rest } = validUser._doc;
-    const expiryDate = new Date(Date.now() + 36000000); // 10 hour
-    res.status(200).send({ message: "Login successful", user: { rest, token, expiryDate } });
+      if (!validPassword) return next(errorHandler(401, 'wrong credentials'));
+      const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const { password: hashedPassword, ...rest } = validUser._doc;
+      const expiryDate = new Date(Date.now() + 36000000); // 10 hour
+      res.status(200).send({ message: "Login successful", user: { rest, token, expiryDate } });
     }
-    
+
   } catch (error) {
     next(error);
   }
@@ -122,7 +124,7 @@ export const verify = (req, res, next) => {
               User
                 .findByIdAndDelete(userId)
                 .then(() => {
-                  return next(errorHandler(401, "Link has expires. Please sign up again")) 
+                  return next(errorHandler(401, "Link has expires. Please sign up again"))
                 })
                 .catch((error) => { return next(errorHandler(404, "Can't delete User when clearing expires email")) });
             })
@@ -133,19 +135,19 @@ export const verify = (req, res, next) => {
             .compare(uniqueString, hashedUniqueString)
             .then(result => {
               if (result) {
-                
                 User
-                  .updateOne({_id: userId}, {verified: true})
+                  .findByIdAndUpdate({ _id: userId }, { verified: true })
                   .then(() => {
-                    Verification.deleteOne({userId}).then(res.status(201).json({ message: 'User created and verify successfully' }))
+                    Verification.deleteOne({ userId }).then(res.status(201).json({ message: 'User created and verify successfully' }))
+                    eventEmitter.emit('userVerifiedStatusChanged', { _id: userId, verified: true });
                   })
-                  .catch(error=>{return next(errorHandler(404, "Problem with update user"))})
+                  .catch(error => { return next(errorHandler(404, "Problem with update user")) })
 
               } else {
                 return next(errorHandler(406, "Invalid verification details passed. Check your inbox"))
               }
             })
-            .catch(error => {return next(errorHandler(405, error))})
+            .catch(error => { return next(errorHandler(405, error)) })
         }
       } else {
         // No exist verification record
@@ -158,6 +160,13 @@ export const verify = (req, res, next) => {
     })
 };
 
+export const sentEmail = (req, res) => {
+  const { _id, email } = req.body;
+  sendVerificationEmail({ _id, email }, res);
+}
+
+
+// work function
 const sendVerificationEmail = ({ _id, email }, res) => {
   const currentUrl = "http://localhost:8080/";
 
@@ -188,10 +197,9 @@ const sendVerificationEmail = ({ _id, email }, res) => {
             res.json({
               status: "PENDING",
               message: "Verification email sent",
-              // data: {
-              //   user: _id,
-              //   email,
-              // }
+              data: {
+                user: _id,
+              }
             })
           })
           .catch((error) => {
@@ -257,5 +265,30 @@ const sendOTPVerificationEmail = async ({ _id, email }, res) => {
     })
   }
 };
+
+export async function verifyPolling(io) {
+  io.on('connection', (socket) => {
+    const userId = socket.handshake.query.userId;
+    console.log("connection");
+    // Check if user is already verified when they connect
+    // If verified, emit the verified status
+    // This ensures that when a user refreshes the page, they don't see a 'pending' status
+    User.findById(userId)
+      .then((user) => {
+        if (user && user.verified) {
+          socket.emit('verifiedStatus', true);
+          console.log("verifiedStatus: " + true);
+        } else {
+          socket.emit('verifiedStatus', 'pending');
+          console.log("verifiedStatus: pending");
+        }
+      })
+      .catch((error) => {
+        console.error('Error checking user verification:', error);
+      });
+  });
+}
+
+
 
 export default test;

@@ -8,7 +8,10 @@ import path from 'path';
 import cors from 'cors';
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from './utils/swagger.js'
-import test from './controllers/auth.controller.js';
+import test, { verifyPolling } from './controllers/auth.controller.js';
+
+import { Server } from 'socket.io';
+import eventEmitter from './utils/eventEmitter.js';
 
 const __dirname = path.resolve();
 
@@ -28,7 +31,7 @@ app.use(cookieParser());
 // App listener
 const server = app.listen(process.env.PORT || 8080, async () => {
   console.log(`Server running on port ${process.env.PORT || 8080}`);
-  try { 
+  try {
     console.log('⏳ Database connecting...');
     await connectDB;
     console.log('✅ Database connected.');
@@ -36,6 +39,21 @@ const server = app.listen(process.env.PORT || 8080, async () => {
   } catch (error) {
     console.log('❌ Error:', error);
   }
+});
+
+const io = new Server(server, {
+  cors: {
+    //origin: 'https://doc-depot-by-atanu.vercel.app',
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PATCH'],
+  },
+});
+
+verifyPolling(io);
+
+// Lắng nghe sự kiện và gửi thông báo qua socket
+eventEmitter.on('userVerifiedStatusChanged', ({ _id, verified }) => {
+  io.emit('verifiedStatus', { _id, verified });
 });
 
 // Serve Swagger documentation

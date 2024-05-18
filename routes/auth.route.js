@@ -1,5 +1,5 @@
 import express from 'express';
-import { signin, signup, google, signout, verify } from '../controllers/auth.controller.js';
+import { signin, signup, google, signout, verify, sentEmail } from '../controllers/auth.controller.js';
 
 const router = express.Router();
 
@@ -23,5 +23,6 @@ router.post('/google', google);
 router.get('/signout', signout);
 
 router.get('/verify/:userId/:uniqueString', verify);
+router.post('/verify/sendemail', sentEmail)
 
 export default router;
