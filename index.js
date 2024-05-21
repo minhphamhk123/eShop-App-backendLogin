@@ -44,7 +44,7 @@ const server = app.listen(process.env.PORT || 8080, async () => {
 const io = new Server(server, {
   cors: {
     //origin: 'https://doc-depot-by-atanu.vercel.app',
-    origin: 'http://localhost:3000',
+    origin: 'http://localhost:8080',
     methods: ['GET', 'POST', 'PATCH'],
   },
 });
@@ -89,3 +89,4 @@ app.use((err, req, res, next) => {
   });
 });
 //JSON.stringify(preContent, null, 2)
+

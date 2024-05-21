@@ -279,8 +279,9 @@ export async function verifyPolling(io) {
           socket.emit('verifiedStatus', true);
           console.log("verifiedStatus: " + true);
         } else {
-          socket.emit('verifiedStatus', 'pending');
-          console.log("verifiedStatus: pending");
+          const value = 'pending';
+          socket.emit('verifiedStatus', { _id, value });
+          console.log('verifiedStatus', { _id, value });
         }
       })
       .catch((error) => {
