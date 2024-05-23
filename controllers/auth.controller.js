@@ -179,50 +179,57 @@ const sendVerificationEmail = ({ _id, email }, res) => {
     html: `<p>Verify your email address to complete the sign up and login into your account.</p><p>This link <b>exprires in 10 minutes</b></p>
     <p>Press <a href=${currentUrl + "api/auth/verify/" + _id + "/" + uniqueString}>here</a> to proceed</p>`,
   };
+  Verification.findOneAndDelete({ userId: _id }).then(() => {
+    //hash the uniqueString
+    const saltRounds = 10;
+    bcryptjs.hash(uniqueString, saltRounds).then((hashedUniqueString) => {
+      const newVerification = new Verification({
+        userId: _id,
+        uniqueString: hashedUniqueString,
+        createAt: Date.now(),
+        expiresAt: Date.now() + 600000, //10 minutes
+      });
 
-  //hash the uniqueString
-  const saltRounds = 10;
-  bcryptjs.hash(uniqueString, saltRounds).then((hashedUniqueString) => {
-    const newVerification = new Verification({
-      userId: _id,
-      uniqueString: hashedUniqueString,
-      createAt: Date.now(),
-      expiresAt: Date.now() + 600000, //10 minutes
-    });
-
-    newVerification.save()
-      .then(() => {
-        transporter.sendMail(mailOptions)
-          .then(() => {
-            res.json({
-              status: "PENDING",
-              message: "Verification email sent",
-              data: {
-                user: _id,
-              }
+      newVerification.save()
+        .then(() => {
+          transporter.sendMail(mailOptions)
+            .then(() => {
+              res.json({
+                status: "PENDING",
+                message: "Verification email sent",
+                data: {
+                  user: _id,
+                }
+              })
             })
-          })
-          .catch((error) => {
-            console.log(error);
-            res.json({
-              status: "FAILED",
-              message: "Verification email failed",
+            .catch((error) => {
+              console.log(error);
+              res.json({
+                status: "FAILED",
+                message: "Verification email failed",
+              })
             })
-          })
-      })
-      .catch((error) => {
-        console.log(error);
-        res.json({
-          status: "FAILED",
-          message: "Couldn't save verification email data!",
         })
+        .catch((error) => {
+          console.log(error);
+          res.json({
+            status: "FAILED",
+            message: "Couldn't save verification email data!",
+          })
+        })
+    }).catch(() => {
+      res.json({
+        status: "FAILED",
+        message: "An error occurred while hasing email data!",
       })
-  }).catch(() => {
+    });
+  }).catch(()=>{
     res.json({
       status: "FAILED",
-      message: "An error occurred while hasing email data!",
+      message: "An error occurred while deleting verification document!",
     })
-  });
+  })
+
 }
 
 const sendOTPVerificationEmail = async ({ _id, email }, res) => {
@@ -280,8 +287,9 @@ export async function verifyPolling(io) {
           console.log("verifiedStatus: " + true);
         } else {
           const value = 'pending';
-          socket.emit('verifiedStatus', { _id, value });
-          console.log('verifiedStatus', { _id, value });
+          const id = user._id
+          socket.emit('verifiedStatus', { id, value });
+          console.log('verifiedStatus', { id, value });
         }
       })
       .catch((error) => {
