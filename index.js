@@ -53,7 +53,7 @@ verifyPolling(io);
 
 // Lắng nghe sự kiện và gửi thông báo qua socket
 eventEmitter.on('userVerifiedStatusChanged', ({ _id, verified }) => {
-  io.emit('verifiedStatus', { _id, verified });
+  io.emit('verifiedStatus', { id: _id, value: verified });
 });
 
 // Serve Swagger documentation
