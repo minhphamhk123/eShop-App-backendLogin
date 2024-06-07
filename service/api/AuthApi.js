@@ -40,10 +40,10 @@ export const UserService = {
       method: "POST",
       data: {
         preToken: token,
-        email: email,
+        emailId: email,
         password: password,
       },
-    }).catch(error => {
+    }).then(() => { return null }).catch(error => {
       // Handle error response
       if (error.response) {
         // Server responded with an error
@@ -51,8 +51,39 @@ export const UserService = {
         if (responseData && responseData.message) {
           // Display error message to the user
           console.error("Message: " + responseData.message);
+          return responseData.message;
         } else {
           console.error("Error: Unknown error response");
+          return "Error: Unknown error response";
+        }
+      } else if (error.request) {
+        // No response received from the server
+        console.error("Error: No response received from the server");
+      } else {
+        // Error during request setup
+        console.error("Error:", error.message);
+      }
+    });
+  },
+  postAuthLogoutCustomer: (token) => {
+    return axios({
+      url: UrlApi.URL_AUTH_LOGOUT_CUSTOMER,
+      method: "POST",
+      data: {
+        token: token,
+      },
+    }).then(()=>{return null}).catch(error => {
+      // Handle error response
+      if (error.response) {
+        // Server responded with an error
+        const responseData = error.response.data;
+        if (responseData && responseData.message) {
+          // Display error message to the user
+          console.error("Message: " + responseData.message);
+          return responseData.message;
+        } else {
+          console.error("Error: Unknown error response");
+          return "Error: Unknown error response";
         }
       } else if (error.request) {
         // No response received from the server

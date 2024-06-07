@@ -20,7 +20,7 @@ const router = express.Router();
 router.post('/signup', signup);
 router.post('/signin', signin);
 router.post('/google', google);
-router.get('/signout', signout);
+router.post('/signout', signout);
 
 router.get('/verify/:userId/:uniqueString', verify);
 router.post('/verify/sendemail', sentEmail);

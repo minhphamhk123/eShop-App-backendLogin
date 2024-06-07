@@ -45,7 +45,7 @@ export const signup = async (req, res, next) => {
     }).catch(error => {
       console.log("Error: " + error);
       return next(errorHandler(405))
-    });  
+    });
   } catch (error) {
     next(error);
   }
@@ -61,11 +61,19 @@ export const signin = async (req, res, next) => {
     } else {
       const validPassword = bcryptjs.compareSync(password, validUser.password);
       if (!validPassword) return next(errorHandler(401, 'wrong credentials'));
-      const token = "customer_" + jwt.sign({ id: validUser._id }, process.env.JWT_SECRET, { expiresIn: '10h' });
-      UserService.postAuthLoginCustomer(token, email, password);
+      const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET, { expiresIn: '10h' });
       const { password: hashedPassword, ...rest } = validUser._doc;
       const expiryDate = new Date(Date.now() + 36000000); // 10 hour
-      res.status(200).send({ message: "Login successful", user: { rest, token, expiryDate } });
+      UserService.postAuthLoginCustomer(token, email, password).then(result => {
+        if (result != null) {
+          res.status(400).send({ message: "Login failed", error: result });
+        } else {
+          res.status(200).send({ message: "Login successful", user: { rest, token, expiryDate } });
+        }
+      }).catch(error => {
+        console.log(error);
+        res.status(400).send({ message: "Login failed", error: error });
+      });
     }
 
   } catch (error) {
@@ -107,7 +115,20 @@ export const google = async (req, res, next) => {
 };
 
 export const signout = (req, res) => {
-  res.clearCookie('access_token').status(200).json('Signout success!');
+  const { token } = req.body;
+
+  try {
+    UserService.postAuthLogoutCustomer(`customer_${token}`).then((result) => {
+      if (result != null) {
+        res.status(400).send({ message: "Logout failed", error: result });
+      } else {
+        res.clearCookie('access_token').status(200).json('Signout success!');
+      }
+    })
+  } catch (error) {
+    res.status(400).send({ message: "Error", error: error });
+  }
+
 };
 
 export const verify = (req, res, next) => {
