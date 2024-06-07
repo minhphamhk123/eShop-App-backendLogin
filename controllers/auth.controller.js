@@ -1,6 +1,7 @@
 import User from '../models/user.model.js';
 import Verification from '../models/verify.model.js';
 import PasswordReset from '../models/passwordReset.model.js';
+import { UserService } from '../service/api/AuthApi.js';
 
 import bcryptjs from 'bcryptjs';
 import { errorHandler } from '../utils/error.js';
@@ -36,10 +37,15 @@ export const signup = async (req, res, next) => {
   const newUser = new User({ username, email, password: hashedPassword, firstName, lastName, phoneNumber });
 
   try {
-    await newUser.save().then((result) => {
-      sendVerificationEmail(result, res);
-    });
-    // res.status(201).json({ message: 'User created successfully' });
+    UserService.postAuthRegisterCustomer(email, password, firstName, lastName, phoneNumber).then(async (response) => {
+      console.log("Customer registration successful:", response.data);
+      await newUser.save().then((result) => {
+        sendVerificationEmail(result, res);
+      });
+    }).catch(error => {
+      console.log("Error: " + error);
+      return next(errorHandler(405))
+    });  
   } catch (error) {
     next(error);
   }
@@ -55,7 +61,8 @@ export const signin = async (req, res, next) => {
     } else {
       const validPassword = bcryptjs.compareSync(password, validUser.password);
       if (!validPassword) return next(errorHandler(401, 'wrong credentials'));
-      const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const token = "customer_" + jwt.sign({ id: validUser._id }, process.env.JWT_SECRET, { expiresIn: '10h' });
+      UserService.postAuthLoginCustomer(token, email, password);
       const { password: hashedPassword, ...rest } = validUser._doc;
       const expiryDate = new Date(Date.now() + 36000000); // 10 hour
       res.status(200).send({ message: "Login successful", user: { rest, token, expiryDate } });
@@ -229,7 +236,7 @@ export const resetPassword = (req, res) => {
               bcryptjs.hash(newPassword, saltRounds).then(hashhedNewPassword => {
                 User.updateOne({ _id: userId }, { password: hashhedNewPassword })
                   .then(() => {
-                    PasswordReset.deleteOne({ userId }).then(()=>{
+                    PasswordReset.deleteOne({ userId }).then(() => {
                       res.json({
                         status: "SUCCESS",
                         message: "Password reset successfully",

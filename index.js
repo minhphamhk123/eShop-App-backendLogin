@@ -3,6 +3,7 @@ import express from 'express';
 import { connectDB } from './config/db.js';
 import userRoutes from './routes/user.route.js';
 import authRoutes from './routes/auth.route.js';
+import categoryRoutes from './routes/auth.route.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import cors from 'cors';
@@ -28,6 +29,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use(cookieParser());
+
 // App listener
 const server = app.listen(process.env.PORT || 8080, async () => {
   console.log(`Server running on port ${process.env.PORT || 8080}`);
@@ -77,6 +79,7 @@ app.use('/api/auth', authRoutes);
 
 //app.use(authCheck);
 app.use("/api/user", userRoutes);
+// app.use("/api/categories", categoryRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
