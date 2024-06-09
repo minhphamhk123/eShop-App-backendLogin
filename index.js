@@ -1,11 +1,13 @@
-import express from "express";
 
-import { connectDB } from "./config/db.js";
-import userRoutes from "./routes/user.route.js";
-import authRoutes from "./routes/auth.route.js";
-import cookieParser from "cookie-parser";
-import path from "path";
-import cors from "cors";
+import express from 'express';
+
+import { connectDB } from './config/db.js';
+import userRoutes from './routes/user.route.js';
+import authRoutes from './routes/auth.route.js';
+import categoryRoutes from './routes/auth.route.js';
+import cookieParser from 'cookie-parser';
+import path from 'path';
+import cors from 'cors';
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./utils/swagger.js";
 import test, { verifyPolling } from "./controllers/auth.controller.js";
@@ -28,6 +30,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use(cookieParser());
+
 // App listener
 const server = app.listen(process.env.PORT || 8080, async () => {
   console.log(`Server running on port ${process.env.PORT || 8080}`);
@@ -52,8 +55,9 @@ const io = new Server(server, {
 verifyPolling(io);
 
 // Lắng nghe sự kiện và gửi thông báo qua socket
-eventEmitter.on("userVerifiedStatusChanged", ({ _id, verified }) => {
-  io.emit("verifiedStatus", { _id, verified });
+
+eventEmitter.on('userVerifiedStatusChanged', ({ _id, verified }) => {
+  io.emit('verifiedStatus', { id: _id, value: verified });
 });
 
 // Serve Swagger documentation
@@ -77,6 +81,7 @@ app.use("/api/auth", authRoutes);
 
 //app.use(authCheck);
 app.use("/api/user", userRoutes);
+// app.use("/api/categories", categoryRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

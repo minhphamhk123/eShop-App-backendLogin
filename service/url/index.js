@@ -1,7 +1,9 @@
-export const DOMAIN_NAME = "http://localhost";
+export const DOMAIN_NAME = "http://localhost:8009";
 
 // AUTH
-export const URL_AUTH_LOGIN = `${DOMAIN_NAME}/auth/login`;
+export const URL_AUTH_REGISTER_CUSTOMER = `${DOMAIN_NAME}/register/customer`;
+export const URL_AUTH_LOGIN_CUSTOMER = `${DOMAIN_NAME}/login/customer`;
+export const URL_AUTH_LOGOUT_CUSTOMER = `${DOMAIN_NAME}/logout/customer`;
 export const URL_FORGOT_PASSWORD = `${DOMAIN_NAME}/auth/forgot-password`;
 export const URL_RESET_PASSWORD = `${DOMAIN_NAME}/auth/reset-password`;
 
