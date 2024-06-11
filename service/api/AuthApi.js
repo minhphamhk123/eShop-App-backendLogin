@@ -3,7 +3,7 @@ import * as UrlApi from "../url/index.js";
 import { errorHandler } from '../../utils/error.js';
 
 export const UserService = {
-  postAuthRegisterCustomer: (email, password, firstName, lastName, phoneNumber) => {
+  postAuthRegisterCustomer: ( username, email, password, firstName, lastName, phoneNumber, id) => {
     return axios({
       url: UrlApi.URL_AUTH_REGISTER_CUSTOMER,
       method: "POST",
@@ -13,8 +13,10 @@ export const UserService = {
         firstName: firstName,
         lastName: lastName,
         mobileNo: phoneNumber,
+        userName: username,
+        mongoDbID: id,
       },
-    }).catch((error) => {
+    }).then(() => { return null }).catch((error) => {
       // Handle error response
       if (error.response) {
         // Server responded with an error

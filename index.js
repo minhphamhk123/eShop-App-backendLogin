@@ -54,8 +54,8 @@ const io = new Server(server, {
 verifyPolling(io);
 
 // Lắng nghe sự kiện và gửi thông báo qua socket
-eventEmitter.on('userVerifiedStatusChanged', ({ _id, verified }) => {
-  io.emit('verifiedStatus', { id: _id, value: verified });
+eventEmitter.on('userVerifiedStatusChanged', ({ email, verified }) => {
+  io.emit('verifiedStatus', { email: email, value: verified });
 });
 
 // Serve Swagger documentation

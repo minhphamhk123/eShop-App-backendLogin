@@ -37,17 +37,20 @@ export const signup = async (req, res, next) => {
   const newUser = new User({ username, email, password: hashedPassword, firstName, lastName, phoneNumber });
 
   try {
-    UserService.postAuthRegisterCustomer(email, password, firstName, lastName, phoneNumber).then(async (response) => {
-      console.log("Customer registration successful:", response.data);
-      await newUser.save().then((result) => {
-        sendVerificationEmail(result, res);
+    await newUser.save().then((result) => {
+      UserService.postAuthRegisterCustomer(username, email, password, firstName, lastName, phoneNumber, result._id).then((result) => {
+        if (result != null) {
+          res.status(400).send({ message: "Register failed", error: result });
+          User.findByIdAndDelete(newUser._id);
+        } else {
+          sendVerificationEmail(newUser, res);
+        }
       });
-    }).catch(error => {
-      console.log("Error: " + error);
-      return next(errorHandler(405))
     });
-  } catch (error) {
-    next(error);
+  }
+  catch (error) {
+    console.log("Error: " + error);
+    return next(errorHandler(405, error))
   }
 };
 
@@ -77,7 +80,8 @@ export const signin = async (req, res, next) => {
     }
 
   } catch (error) {
-    next(error);
+    console.log("Error: " + error);
+    return next(errorHandler(405, error))
   }
 };
 
@@ -165,7 +169,10 @@ export const verify = (req, res, next) => {
                   .findByIdAndUpdate({ _id: userId }, { verified: true })
                   .then(() => {
                     Verification.deleteOne({ userId }).then(res.status(201).json({ message: 'User created and verify successfully' }))
-                    eventEmitter.emit('userVerifiedStatusChanged', { _id: userId, verified: true });
+                    User.findById(userId).then((result) => {
+                      eventEmitter.emit('userVerifiedStatusChanged', { email: result.email, verified: true });
+                    })
+                    
                   })
                   .catch(error => { return next(errorHandler(404, "Problem with update user")) })
 
@@ -186,9 +193,16 @@ export const verify = (req, res, next) => {
     })
 };
 
-export const sentEmail = (req, res) => {
-  const { _id, email } = req.body;
-  sendVerificationEmail({ _id, email }, res);
+export const sentEmail = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const newUser = await User.findOne({email: email});
+    const _id = newUser._id;
+    sendVerificationEmail({ _id , email }, res);
+  } catch (error) {
+    console.log("Error: " + error);
+    return next(errorHandler(405, error))
+  }
 }
 
 export const resetPasswordEmail = (req, res) => {
@@ -426,23 +440,23 @@ const sendOTPVerificationEmail = async ({ _id, email }, res) => {
 // Fuction use socket.io update verification status
 export async function verifyPolling(io) {
   io.on('connection', (socket) => {
-    const userId = socket.handshake.query.userId;
+    const email = socket.handshake.query.email;
     console.log("connection");
     // Check if user is already verified when they connect
     // If verified, emit the verified status
     // This ensures that when a user refreshes the page, they don't see a 'pending' status
-    User.findById(userId)
+    User.findOne({email: email})
       .then((user) => {
         if (user && user.verified) {
           const value = 'true';
-          const id = user._id
-          socket.emit('verifiedStatus', { id: id, value: value });
-          console.log("verifiedStatus", { id: id, value: value });
+          const email = user.email;
+          socket.emit('verifiedStatus', { email: email, value: value });
+          console.log("verifiedStatus", { email: email, value: value });
         } else {
           const value = 'pending';
-          const id = user._id
-          socket.emit('verifiedStatus', { id: id, value: value });
-          console.log('verifiedStatus', { id: id, value: value });
+          const email = user.email;
+          socket.emit('verifiedStatus', { email: email, value: value });
+          console.log('verifiedStatus', { email: email, value: value });
         }
       })
       .catch((error) => {
