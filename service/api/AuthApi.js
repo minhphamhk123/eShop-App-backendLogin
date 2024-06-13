@@ -116,3 +116,58 @@ export const UserService = {
     });
   },
 };
+
+import grpc from '@grpc/grpc-js';
+import protoLoader from'@grpc/proto-loader';
+
+// Tải file proto
+const packageDefinition = protoLoader.loadSync('./proto/auth.proto', {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true
+});
+
+const authProto = grpc.loadPackageDefinition(packageDefinition).auth;
+
+// Tạo một instance client gRPC
+const client = new authProto.AuthService('localhost:50051', grpc.credentials.createInsecure());
+
+export const postAuthLoginCustomergRPC = (token, email, password) => {
+  return new Promise((resolve, reject) => {
+    const request = {
+      preToken: token,
+      emailId: email,
+      password: password
+    };
+
+    client.loginCustomer(request, (error, response) => {
+      if (error) {
+        // Xử lý lỗi
+        if (error.code) {
+          // gRPC error code
+          console.error('gRPC Error:', error.message);
+          reject(error.message);
+        } else {
+          // Unknown error
+          console.error('Error:', error.message);
+          reject('Error: Unknown error response');
+        }
+      } else {
+        // Xử lý phản hồi thành công
+        resolve(response.message);
+      }
+    });
+  });
+};
+
+// // Sử dụng ví dụ
+// postAuthLoginCustomergRPC('some-token', 'email@example.com', 'password123')
+//   .then(message => {
+//     console.log('Login successful:', message);
+//   })
+//   .catch(error => {
+//     console.error('Login failed:', error);
+//   });
+

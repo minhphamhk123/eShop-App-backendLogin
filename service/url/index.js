@@ -1,4 +1,4 @@
-export const DOMAIN_NAME = "http://localhost:8009";
+export const DOMAIN_NAME = "http://host.docker.internal:8009";
 
 // AUTH
 export const URL_AUTH_REGISTER_CUSTOMER = `${DOMAIN_NAME}/register/customer`;

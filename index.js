@@ -19,6 +19,11 @@ const __dirname = path.resolve();
 
 const app = express();
 
+const PROTO_PATH = "./proto/customers.proto";
+
+import grpc from '@grpc/grpc-js';
+import protoLoader from '@grpc/proto-loader';
+
 // Sử dụng cors middleware
 app.use(cors());
 // app.use(express.static(path.join(__dirname, '/client/dist')));

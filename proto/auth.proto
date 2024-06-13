@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package auth;
+
+service AuthService {
+  rpc loginCustomer (LoginRequest) returns (LoginResponse);
+}
+
+message LoginRequest {
+  string preToken = 1;
+  string emailId = 2;
+  string password = 3;
+}
+
+message LoginResponse {
+  string message = 1;
+}

@@ -2,7 +2,7 @@
 import User from '../models/user.model.js';
 import Verification from '../models/verify.model.js';
 import PasswordReset from '../models/passwordReset.model.js';
-import { UserService } from '../service/api/AuthApi.js';
+import { UserService, postAuthLoginCustomergRPC } from '../service/api/AuthApi.js';
 
 import bcryptjs from "bcryptjs";
 import { errorHandler } from "../utils/error.js";
@@ -57,6 +57,7 @@ export const signup = async (req, res, next) => {
 
 export const signin = async (req, res, next) => {
   const { email, password } = req.body;
+  console.log("Email and password login: " + email + ' ' + password)
   try {
     const validUser = await User.findOne({ email });
     if (!validUser) return next(errorHandler(404, "User not found"));
@@ -69,8 +70,8 @@ export const signin = async (req, res, next) => {
       const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET, { expiresIn: '10h' });
       const { password: hashedPassword, ...rest } = validUser._doc;
       const expiryDate = new Date(Date.now() + 36000000); // 10 hour
-      UserService.postAuthLoginCustomer(token, email, password).then(result => {
-        if (result != null) {
+      postAuthLoginCustomergRPC(token, email, password).then(result => {
+        if (result != 'Success') {
           res.status(400).send({ message: "Login failed", error: result });
         } else {
           res.status(200).send({ message: "Login successful", user: { rest, token, expiryDate } });
